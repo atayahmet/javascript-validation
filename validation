@@ -1,0 +1,183 @@
+/*
+ |-----------------------------------------------------------------------------------------------
+ |
+ | @package		Validation
+ | @author		Ahmet ATAY
+ | @copyright	Copyright (c) 2014, Ahmet ATAY.
+ | @link		http://www.atayahmet.com
+ | @since		Version 1.0
+ |
+ |-----------------------------------------------------------------------------------------------
+ */
+
+var validation = {
+	
+	run:function(config){
+		
+		var validateResult = true;
+		var formElement = document.getElementById(config['element']);
+	    var _method,_element,elementValue,errMsg,errElement,cbackResult,errObj;
+	    
+		if(typeof(config) == 'object' && formElement.tagName == 'FORM'){
+			
+			for(var rule in config['rules'])
+			{
+				_element = document.forms[config['element']][rule];
+				
+				if(_element){
+				
+					elementValue = _element.value;
+					
+					switch(typeof(config['rules'][rule]))
+					{
+						// dynamic string functions/methods
+						case "string":
+							
+							_method = config['rules'][rule];
+							
+							/********************
+							 * callback functions
+							 ********************/
+							if(_method){
+								
+								cbackResult = this['callback']({method: _method, value: elementValue, result: validateResult, rule: rule, config: config});
+								
+								validateResult = cbackResult.result;
+								errMsg = cbackResult.msg;
+								errElement = cbackResult.errelement;
+								
+							}
+							
+							//alert(config['rules'][rule]);
+						break;
+						
+						// dynamic object functions/methods
+						case "object":
+							
+							for(var _rule in config['rules'][rule])
+							{
+								if(config['rules'][rule][_rule]){
+									
+									cbackResult = this['callback']({method: _rule, value: elementValue, result: validateResult, rule: rule, config: config, multi: true});
+									
+									validateResult = cbackResult.result;
+									errMsg = cbackResult.msg;
+									errElement = cbackResult.errelement;
+									
+								}
+							}
+							
+						break;
+					}
+				}
+				
+			}
+			
+			
+			if(validateResult === true){
+				
+				eval(config['complete'])(_element);
+				
+			}else{
+				errObj = document.getElementById(errElement);
+				eval(config['fail'])(errObj,errMsg);
+				document.forms[config['element']][errElement].focus();
+			}
+		
+		}
+	},
+	callback: function(parms){
+		
+		var valueMethod = parms.config['rules'][parms.rule][parms.method];
+		
+		if( typeof validation[parms.method] == 'function' && parms.result) { 
+			
+			if(typeof(valueMethod) === 'number'){
+				
+				parms.result = this[parms.method](valueMethod,parms.value);
+			
+			}else{
+				
+				parms.result = this[parms.method](parms.value);
+				
+			}
+			
+			errMsg = this['getMsg'](parms);
+			errElement = parms.rule;
+			
+		}else{
+			
+			if(typeof window[parms.method] === "function" && parms.result){
+				
+				
+				if(typeof(valueMethod) === 'number'){
+					
+					parms.result = window[parms.method](valueMethod,parms.value);
+					
+				}else{
+					
+					var _obj = document.forms[parms.config['element']][parms.rule];
+					parms.result = window[parms.method](_obj,parms.value);
+					
+				}
+				
+				errMsg = this['getMsg'](parms);
+				errElement = parms.rule;
+				
+			}
+			
+		}
+		
+		return {result: parms.result, msg: errMsg, errelement: errElement};
+		
+	},
+	getMsg: function(parms){
+		
+		var errMsg;
+		
+		if(!parms.multi){
+				
+			errMsg = (!parms.result ? parms.config['messages'][parms.rule] : '');
+			
+		}else{
+			
+			errMsg = (!parms.result ? parms.config['messages'][parms.rule][parms.method] : '');
+			
+		}
+		
+		return errMsg;
+		
+	},
+	required:function(parm){
+		
+		return !parm ? false : true;
+		
+	},
+	email: function(email){
+		
+		var emailExp = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+	    if(!email.match(emailExp))
+	    {
+	    	return false;
+	    }else{
+	    	return true;
+	    }
+		
+	},
+	minlength: function(nlength,value){
+		
+		return value.length < nlength ? false : true;
+		
+	},
+	maxlength: function(xlength,value){
+		
+		return value.length > xlength ? false : true;
+		
+	},
+	numeric: function(value){
+		
+		return !isNaN(value) ? true : false;
+		
+	}
+	
+};
