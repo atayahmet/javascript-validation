@@ -1,4 +1,0 @@
-javascript-validation
-=====================
-
-Javascript Validation
