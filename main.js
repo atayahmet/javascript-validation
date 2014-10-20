@@ -1,1 +1,7 @@
-var test {};
+var test {
+  main: function()
+  {
+    
+  }
+  
+};
